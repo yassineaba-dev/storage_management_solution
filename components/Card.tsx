@@ -11,6 +11,7 @@ const Card = ({ file }: { file: Models.Document }) => {
     <Link
   href={constructDownloadUrl(file.bucketFileId)} // use download URL
   target="_blank"
+  download
   rel="noopener noreferrer"
   className="file-card"
     >
