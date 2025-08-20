@@ -1,3 +1,4 @@
+// components/Thumbnail.tsx
 import React from "react";
 import Image from "next/image";
 import { cn, getFileIcon } from "@/lib/utils";
@@ -10,6 +11,7 @@ interface Props {
   className?: string;
 }
 
+// Remove the named export and keep only the default export
 const Thumbnail = ({
   type,
   extension,
@@ -22,14 +24,16 @@ const Thumbnail = ({
   return (
     <figure className={cn("thumbnail", className)}>
       <Image
-  src={isImage ? url : getFileIcon(extension, type)}
-  alt="thumbnail"
-  width={100}
-  height={100}
-  className={cn("size-8 object-contain", imageClassName, isImage && "thumbnail-image")}
-  unoptimized={isImage}
-/>
+        src={isImage ? url : getFileIcon(extension, type)}
+        alt="thumbnail"
+        width={100}
+        height={100}
+        className={cn("size-8 object-contain", imageClassName, isImage && "thumbnail-image")}
+        unoptimized={isImage}
+      />
     </figure>
   );
 };
+
+// Only export default, remove the named export
 export default Thumbnail;
