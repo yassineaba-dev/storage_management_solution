@@ -7,6 +7,14 @@ import ActionDropdown from "@/components/ActionDropdown";
 import { constructDownloadUrl } from "@/lib/utils";
 
 const Card = ({ file }: { file: Models.Document }) => {
+  // Add checks for undefined values
+  if (!file) {
+    return <div>No file data available</div>;
+  }
+
+  if (!file.owner || !file.owner.fullName) {
+    return <div>Invalid file data</div>;
+  }
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
