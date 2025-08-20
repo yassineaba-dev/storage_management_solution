@@ -1,5 +1,5 @@
 import { Models } from "node-appwrite";
-import Thumbnail from "@/components/Thumbnail";
+import { Thumbnail } from "@/components/Thumbnail";
 import FormattedDateTime from "@/components/FormattedDateTime";
 import { convertFileSize, formatDateTime } from "@/lib/utils";
 import React from "react";
