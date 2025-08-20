@@ -22,6 +22,7 @@ export const uploadFile = async ({
   const { storage, databases } = await createAdminClient();
 
   try {
+    // Upload file to bucket
     const inputFile = InputFile.fromBuffer(file, file.name);
 
     const bucketFile = await storage.createFile(
@@ -30,6 +31,7 @@ export const uploadFile = async ({
       inputFile,
     );
 
+    // Create metadata document with required fields
     const fileDocument = {
       type: getFileType(bucketFile.name).type,
       name: bucketFile.name,
@@ -40,8 +42,10 @@ export const uploadFile = async ({
       accountId,
       users: [],
       bucketFileId: bucketFile.$id,
+      bucketField: appwriteConfig.bucketId,
     };
 
+    // Create database document
     const newFile = await databases
       .createDocument(
         appwriteConfig.databaseId,
@@ -50,11 +54,14 @@ export const uploadFile = async ({
         fileDocument,
       )
       .catch(async (error: unknown) => {
+        // Rollback: delete uploaded file if document creation fails
         await storage.deleteFile(appwriteConfig.bucketId, bucketFile.$id);
         handleError(error, "Failed to create file document");
       });
 
+    // Invalidate cache
     revalidatePath(path);
+
     return parseStringify(newFile);
   } catch (error) {
     handleError(error, "Failed to upload file");
