@@ -4,10 +4,16 @@ import Thumbnail from "@/components/Thumbnail";
 import { convertFileSize } from "@/lib/utils";
 import FormattedDateTime from "@/components/FormattedDateTime";
 import ActionDropdown from "@/components/ActionDropdown";
+import { constructDownloadUrl } from "@/lib/utils";
 
 const Card = ({ file }: { file: Models.Document }) => {
   return (
-    <Link href={file.url} target="_blank" className="file-card">
+    <Link
+  href={constructDownloadUrl(file.bucketFileId)} // use download URL
+  target="_blank"
+  rel="noopener noreferrer"
+  className="file-card"
+    >
       <div className="flex justify-between">
         <Thumbnail
           type={file.type}
