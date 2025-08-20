@@ -7,14 +7,30 @@ import ActionDropdown from "@/components/ActionDropdown";
 import { constructDownloadUrl } from "@/lib/utils";
 
 const Card = ({ file }: { file: Models.Document }) => {
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    try {
+      const downloadUrl = constructDownloadUrl(file.bucketFileId);
+      const response = await fetch(downloadUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = file.name;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error('Download failed:', error);
+    }
+  };
+
   return (
-    <Link
-  href={constructDownloadUrl(file.bucketFileId)} // use download URL
-  target="_blank"
-  download
-  rel="noopener noreferrer"
-  className="file-card"
-    >
+    <div className="file-card">
       <div className="flex justify-between">
         <Thumbnail
           type={file.type}
@@ -39,8 +55,13 @@ const Card = ({ file }: { file: Models.Document }) => {
         <p className="caption line-clamp-1 text-light-200">
           By: {file.owner.fullName}
         </p>
+        <button 
+          onClick={handleDownload}
+          className="mt-2 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+        >
+          Download
+        </button>
       </div>
-    </Link>
+    </div>
   );
 };
-export default Card;
