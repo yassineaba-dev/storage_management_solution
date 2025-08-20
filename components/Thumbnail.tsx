@@ -11,14 +11,14 @@ interface Props {
   className?: string;
 }
 
-// Remove the named export and keep only the default export
-const Thumbnail = ({
+// Use a named function for better debugging
+function ThumbnailComponent({
   type,
   extension,
   url = "",
   imageClassName,
   className,
-}: Props) => {
+}: Props) {
   const isImage = type === "image" && extension !== "svg";
 
   return (
@@ -33,7 +33,8 @@ const Thumbnail = ({
       />
     </figure>
   );
-};
+}
 
-// Only export default, remove the named export
-export default Thumbnail;
+// Export with a clear name
+export const Thumbnail = ThumbnailComponent;
+export default ThumbnailComponent;
