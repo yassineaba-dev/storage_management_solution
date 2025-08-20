@@ -33,17 +33,16 @@ export const uploadFile = async ({
 
     // Create metadata document with required fields
     const fileDocument = {
-      type: getFileType(bucketFile.name).type,
-      name: bucketFile.name,
-      url: constructFileUrl(bucketFile.$id),
-      extension: getFileType(bucketFile.name).extension,
-      size: bucketFile.sizeOriginal,
-      owner: ownerId,
-      accountId,
-      users: [],
-      bucketFileId: bucketFile.$id,
-      bucketField: appwriteConfig.bucketId,
-    };
+  type: getFileType(bucketFile.name).type,   // enum ✅
+  name: bucketFile.name,                     // string ✅
+  url: constructFileUrl(bucketFile.$id),     // url ✅
+  extension: getFileType(bucketFile.name).extension, // string (optional) ✅
+  size: bucketFile.sizeOriginal,             // integer (optional) ✅
+  owner: ownerId,                            // relationship ✅
+  accountId,                                 // string ✅
+  users: [],                                 // string[] ✅
+  bucketFileId: bucketFile.$id,              // string ✅
+};
 
     // Create database document
     const newFile = await databases
