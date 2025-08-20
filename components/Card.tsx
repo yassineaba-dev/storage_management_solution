@@ -13,24 +13,39 @@ const Card = ({ file }: { file: Models.Document }) => {
     
     try {
       const downloadUrl = constructDownloadUrl(file.bucketFileId);
-      const response = await fetch(downloadUrl);
-      const blob = await response.blob();
-      const blobUrl = URL.createObjectURL(blob);
       
-      const a = document.createElement('a');
-      a.href = blobUrl;
-      a.download = file.name;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(blobUrl);
+      // For larger files like videos, it's better to open in a new tab
+      // rather than using blob approach which can memory issues
+      if (file.type === 'video' || file.size > 50 * 1024 * 1024) {
+        window.open(downloadUrl, '_blank');
+      } else {
+        // For smaller files, use the blob approach
+        const response = await fetch(downloadUrl, {
+          credentials: 'include' // Include cookies for authentication
+        });
+        
+        if (!response.ok) throw new Error('Download failed');
+        
+        const blob = await response.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = file.name;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(blobUrl);
+      }
     } catch (error) {
       console.error('Download failed:', error);
+      // Fallback to opening in new tab
+      window.open(constructDownloadUrl(file.bucketFileId), '_blank');
     }
   };
 
   return (
-    <div className="file-card">
+    <div className="file-card" onClick={handleDownload}>
       <div className="flex justify-between">
         <Thumbnail
           type={file.type}
