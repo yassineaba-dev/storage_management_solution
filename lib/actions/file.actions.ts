@@ -35,7 +35,7 @@ export const uploadFile = async ({
     const fileDocument = {
   type: getFileType(bucketFile.name).type,   // enum ✅
   name: bucketFile.name,                     // string ✅
-  url: constructFileUrl(bucketFile.$id),     // url ✅
+  url: constructDownloadUrl(bucketFileId),     // url ✅
   extension: getFileType(bucketFile.name).extension, // string (optional) ✅
   size: bucketFile.sizeOriginal,             // integer (optional) ✅
   owner: ownerId,                            // relationship ✅
