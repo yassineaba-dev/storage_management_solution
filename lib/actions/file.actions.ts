@@ -224,8 +224,10 @@ export async function getTotalSpaceUsed() {
 
     files.documents.forEach((file) => {
       const fileType = file.type as FileType;
-      totalSpace[fileType].size += file.size;
-      totalSpace.used += file.size;
+      // Ensure size is a valid number
+      const fileSize = Number(file.size) || 0;
+      totalSpace[fileType].size += fileSize;
+      totalSpace.used += fileSize;
 
       if (
         !totalSpace[fileType].latestDate ||
