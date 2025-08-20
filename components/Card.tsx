@@ -1,76 +1,46 @@
-import * as React from "react"
+import { Models } from "node-appwrite";
+import Link from "next/link";
+import Thumbnail from "@/components/Thumbnail";
+import { convertFileSize } from "@/lib/utils";
+import FormattedDateTime from "@/components/FormattedDateTime";
+import ActionDropdown from "@/components/ActionDropdown";
+import { constructDownloadUrl } from "@/lib/utils";
 
-import { cn } from "@/lib/utils"
+const Card = ({ file }: { file: Models.Document }) => {
+  return (
+    <Link
+  href={constructDownloadUrl(file.bucketFileId)} // use download URL
+  target="_blank"
+  download
+  rel="noopener noreferrer"
+  className="file-card"
+    >
+      <div className="flex justify-between">
+        <Thumbnail
+          type={file.type}
+          extension={file.extension}
+          url={file.url}
+          className="!size-20"
+          imageClassName="!size-11"
+        />
 
-const Card = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn(
-      "rounded-xl border bg-card text-card-foreground shadow",
-      className
-    )}
-    {...props}
-  />
-))
-Card.displayName = "Card"
+        <div className="flex flex-col items-end justify-between">
+          <ActionDropdown file={file} />
+          <p className="body-1">{convertFileSize(file.size)}</p>
+        </div>
+      </div>
 
-const CardHeader = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex flex-col space-y-1.5 p-6", className)}
-    {...props}
-  />
-))
-CardHeader.displayName = "CardHeader"
-
-const CardTitle = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("font-semibold leading-none tracking-tight", className)}
-    {...props}
-  />
-))
-CardTitle.displayName = "CardTitle"
-
-const CardDescription = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("text-sm text-muted-foreground", className)}
-    {...props}
-  />
-))
-CardDescription.displayName = "CardDescription"
-
-const CardContent = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div ref={ref} className={cn("p-6 pt-0", className)} {...props} />
-))
-CardContent.displayName = "CardContent"
-
-const CardFooter = React.forwardRef<
-  HTMLDivElement,
-  React.HTMLAttributes<HTMLDivElement>
->(({ className, ...props }, ref) => (
-  <div
-    ref={ref}
-    className={cn("flex items-center p-6 pt-0", className)}
-    {...props}
-  />
-))
-CardFooter.displayName = "CardFooter"
-
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent }
+      <div className="file-card-details">
+        <p className="subtitle-2 line-clamp-1">{file.name}</p>
+        <FormattedDateTime
+          date={file.$createdAt}
+          className="body-2 text-light-100"
+        />
+        <p className="caption line-clamp-1 text-light-200">
+          By: {file.owner.fullName}
+        </p>
+      </div>
+    </Link>
+  );
+};
+export default Card;
