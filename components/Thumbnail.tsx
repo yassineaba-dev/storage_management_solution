@@ -1,4 +1,3 @@
-// components/Thumbnail.tsx
 import React from "react";
 import Image from "next/image";
 import { cn, getFileIcon } from "@/lib/utils";
@@ -11,14 +10,13 @@ interface Props {
   className?: string;
 }
 
-// Use a named function for better debugging
-function ThumbnailComponent({
+export const Thumbnail = ({
   type,
   extension,
   url = "",
   imageClassName,
   className,
-}: Props) {
+}: Props) => {
   const isImage = type === "image" && extension !== "svg";
 
   return (
@@ -28,13 +26,13 @@ function ThumbnailComponent({
         alt="thumbnail"
         width={100}
         height={100}
-        className={cn("size-8 object-contain", imageClassName, isImage && "thumbnail-image")}
-        unoptimized={isImage}
+        className={cn(
+          "size-8 object-contain",
+          imageClassName,
+          isImage && "thumbnail-image",
+        )}
       />
     </figure>
   );
-}
-
-// Export with a clear name
-export const Thumbnail = ThumbnailComponent;
-export default ThumbnailComponent;
+};
+export default Thumbnail;
