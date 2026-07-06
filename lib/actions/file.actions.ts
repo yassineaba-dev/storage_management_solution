@@ -9,7 +9,8 @@ import { revalidatePath } from "next/cache";
 import { getCurrentUser } from "@/lib/actions/user.actions";
 
 const handleError = (error: unknown, message: string) => {
-  console.log(error, message);
+  console.log("❌ ERROR:", message);
+  console.log(error);
   throw error;
 };
 
@@ -45,7 +46,7 @@ export const uploadFile = async ({
     const newFile = await databases
       .createDocument(
         appwriteConfig.databaseId,
-        appwriteConfig.filesTableId, // ✅ FIX
+        appwriteConfig.filesTableId,
         ID.unique(),
         fileDocument
       )
@@ -78,14 +79,12 @@ const createQueries = (
 
   if (types.length > 0) queries.push(Query.equal("type", types));
 
-  // 🔥 FIX مهم
   if (searchText) queries.push(Query.search("name", searchText));
 
   if (limit) queries.push(Query.limit(limit));
 
   if (sort) {
     const [sortBy, orderBy] = sort.split("-");
-
     queries.push(
       orderBy === "asc"
         ? Query.orderAsc(sortBy)
@@ -118,7 +117,7 @@ export const getFiles = async ({
 
     const files = await databases.listDocuments(
       appwriteConfig.databaseId,
-      appwriteConfig.filesTableId, // ✅ FIX
+      appwriteConfig.filesTableId,
       queries
     );
 
@@ -141,7 +140,7 @@ export const renameFile = async ({
 
     const updatedFile = await databases.updateDocument(
       appwriteConfig.databaseId,
-      appwriteConfig.filesTableId, // ✅ FIX
+      appwriteConfig.filesTableId,
       fileId,
       { name: newName }
     );
@@ -163,7 +162,7 @@ export const updateFileUsers = async ({
   try {
     const updatedFile = await databases.updateDocument(
       appwriteConfig.databaseId,
-      appwriteConfig.filesTableId, // ✅ FIX
+      appwriteConfig.filesTableId,
       fileId,
       { users: emails }
     );
@@ -183,13 +182,36 @@ export const deleteFile = async ({
   const { databases, storage } = await createAdminClient();
 
   try {
-    await databases.deleteDocument(
-      appwriteConfig.databaseId,
-      appwriteConfig.filesTableId, // ✅ FIX
-      fileId
-    );
+    console.log("🗑 DELETE FILE:", fileId);
 
-    await storage.deleteFile(appwriteConfig.bucketId, bucketFileId);
+    // ✅ 1. تحقق واش document كاين
+    let existingFile = null;
+
+    try {
+      existingFile = await databases.getDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.filesTableId,
+        fileId
+      );
+    } catch (err) {
+      console.log("⚠️ Document not found in DB:", fileId);
+    }
+
+    // ✅ 2. إلا كان كاين حيدو
+    if (existingFile) {
+      await databases.deleteDocument(
+        appwriteConfig.databaseId,
+        appwriteConfig.filesTableId,
+        fileId
+      );
+    }
+
+    // ✅ 3. حذف file من storage (حتى إلا document ما كانش)
+    try {
+      await storage.deleteFile(appwriteConfig.bucketId, bucketFileId);
+    } catch (err) {
+      console.log("⚠️ Storage file already deleted:", bucketFileId);
+    }
 
     revalidatePath(path);
 
@@ -209,7 +231,7 @@ export async function getTotalSpaceUsed() {
 
     const files = await databases.listDocuments(
       appwriteConfig.databaseId,
-      appwriteConfig.filesTableId, // ✅ FIX
+      appwriteConfig.filesTableId,
       [Query.equal("owner", [currentUser.$id])]
     );
 
