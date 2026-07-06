@@ -22,43 +22,38 @@ export const uploadFile = async ({
   const { storage, databases } = await createAdminClient();
 
   try {
-    // Upload file to bucket
     const inputFile = InputFile.fromBuffer(file, file.name);
 
     const bucketFile = await storage.createFile(
       appwriteConfig.bucketId,
       ID.unique(),
-      inputFile,
+      inputFile
     );
 
-    // Create metadata document with required fields
     const fileDocument = {
-  type: getFileType(bucketFile.name).type,   // enum ✅
-  name: bucketFile.name,                     // string ✅
-  url: constructFileUrl(bucketFile.$id),     // url ✅
-  extension: getFileType(bucketFile.name).extension, // string (optional) ✅
-  size: bucketFile.sizeOriginal,             // integer (optional) ✅
-  owner: ownerId,                            // relationship ✅
-  accountId,                                 // string ✅
-  users: [],                                 // string[] ✅
-  bucketFileId: bucketFile.$id,              // string ✅
-};
+      type: getFileType(bucketFile.name).type,
+      name: bucketFile.name,
+      url: constructFileUrl(bucketFile.$id),
+      extension: getFileType(bucketFile.name).extension,
+      size: bucketFile.sizeOriginal,
+      owner: ownerId,
+      accountId,
+      users: [],
+      bucketFileId: bucketFile.$id,
+    };
 
-    // Create database document
     const newFile = await databases
       .createDocument(
         appwriteConfig.databaseId,
-        appwriteConfig.filesCollectionId,
+        appwriteConfig.filesTableId, // ✅ FIX
         ID.unique(),
-        fileDocument,
+        fileDocument
       )
       .catch(async (error: unknown) => {
-        // Rollback: delete uploaded file if document creation fails
         await storage.deleteFile(appwriteConfig.bucketId, bucketFile.$id);
         handleError(error, "Failed to create file document");
       });
 
-    // Invalidate cache
     revalidatePath(path);
 
     return parseStringify(newFile);
@@ -72,7 +67,7 @@ const createQueries = (
   types: string[],
   searchText: string,
   sort: string,
-  limit?: number,
+  limit?: number
 ) => {
   const queries = [
     Query.or([
@@ -82,14 +77,19 @@ const createQueries = (
   ];
 
   if (types.length > 0) queries.push(Query.equal("type", types));
-  if (searchText) queries.push(Query.contains("name", searchText));
+
+  // 🔥 FIX مهم
+  if (searchText) queries.push(Query.search("name", searchText));
+
   if (limit) queries.push(Query.limit(limit));
 
   if (sort) {
     const [sortBy, orderBy] = sort.split("-");
 
     queries.push(
-      orderBy === "asc" ? Query.orderAsc(sortBy) : Query.orderDesc(sortBy),
+      orderBy === "asc"
+        ? Query.orderAsc(sortBy)
+        : Query.orderDesc(sortBy)
     );
   }
 
@@ -106,18 +106,22 @@ export const getFiles = async ({
 
   try {
     const currentUser = await getCurrentUser();
-
     if (!currentUser) throw new Error("User not found");
 
-    const queries = createQueries(currentUser, types, searchText, sort, limit);
+    const queries = createQueries(
+      currentUser,
+      types,
+      searchText,
+      sort,
+      limit
+    );
 
     const files = await databases.listDocuments(
       appwriteConfig.databaseId,
-      appwriteConfig.filesCollectionId,
-      queries,
+      appwriteConfig.filesTableId, // ✅ FIX
+      queries
     );
 
-    console.log({ files });
     return parseStringify(files);
   } catch (error) {
     handleError(error, "Failed to get files");
@@ -134,13 +138,12 @@ export const renameFile = async ({
 
   try {
     const newName = `${name}.${extension}`;
+
     const updatedFile = await databases.updateDocument(
       appwriteConfig.databaseId,
-      appwriteConfig.filesCollectionId,
+      appwriteConfig.filesTableId, // ✅ FIX
       fileId,
-      {
-        name: newName,
-      },
+      { name: newName }
     );
 
     revalidatePath(path);
@@ -160,17 +163,15 @@ export const updateFileUsers = async ({
   try {
     const updatedFile = await databases.updateDocument(
       appwriteConfig.databaseId,
-      appwriteConfig.filesCollectionId,
+      appwriteConfig.filesTableId, // ✅ FIX
       fileId,
-      {
-        users: emails,
-      },
+      { users: emails }
     );
 
     revalidatePath(path);
     return parseStringify(updatedFile);
   } catch (error) {
-    handleError(error, "Failed to rename file");
+    handleError(error, "Failed to update file users");
   }
 };
 
@@ -182,20 +183,19 @@ export const deleteFile = async ({
   const { databases, storage } = await createAdminClient();
 
   try {
-    const deletedFile = await databases.deleteDocument(
+    await databases.deleteDocument(
       appwriteConfig.databaseId,
-      appwriteConfig.filesCollectionId,
-      fileId,
+      appwriteConfig.filesTableId, // ✅ FIX
+      fileId
     );
 
-    if (deletedFile) {
-      await storage.deleteFile(appwriteConfig.bucketId, bucketFileId);
-    }
+    await storage.deleteFile(appwriteConfig.bucketId, bucketFileId);
 
     revalidatePath(path);
+
     return parseStringify({ status: "success" });
   } catch (error) {
-    handleError(error, "Failed to rename file");
+    handleError(error, "Failed to delete file");
   }
 };
 
@@ -204,12 +204,13 @@ export async function getTotalSpaceUsed() {
   try {
     const { databases } = await createSessionClient();
     const currentUser = await getCurrentUser();
+
     if (!currentUser) throw new Error("User is not authenticated.");
 
     const files = await databases.listDocuments(
       appwriteConfig.databaseId,
-      appwriteConfig.filesCollectionId,
-      [Query.equal("owner", [currentUser.$id])],
+      appwriteConfig.filesTableId, // ✅ FIX
+      [Query.equal("owner", [currentUser.$id])]
     );
 
     const totalSpace = {
@@ -219,17 +220,19 @@ export async function getTotalSpaceUsed() {
       audio: { size: 0, latestDate: "" },
       other: { size: 0, latestDate: "" },
       used: 0,
-      all: 2 * 1024 * 1024 * 1024 /* 2GB available bucket storage */,
+      all: 2 * 1024 * 1024 * 1024,
     };
 
     files.documents.forEach((file) => {
       const fileType = file.type as FileType;
-      totalSpace[fileType].size += file.size;
-      totalSpace.used += file.size;
+
+      totalSpace[fileType].size += file.size || 0;
+      totalSpace.used += file.size || 0;
 
       if (
         !totalSpace[fileType].latestDate ||
-        new Date(file.$updatedAt) > new Date(totalSpace[fileType].latestDate)
+        new Date(file.$updatedAt) >
+          new Date(totalSpace[fileType].latestDate)
       ) {
         totalSpace[fileType].latestDate = file.$updatedAt;
       }
@@ -237,6 +240,6 @@ export async function getTotalSpaceUsed() {
 
     return parseStringify(totalSpace);
   } catch (error) {
-    handleError(error, "Error calculating total space used:, ");
+    handleError(error, "Error calculating total space used");
   }
 }
